@@ -10,7 +10,7 @@ import httpx
 import shortuuid
 
 from langport.constants import WORKER_API_TIMEOUT, ErrorCode
-from langport.model.model_adapter import get_conversation_template
+from fastchat.model.model_adapter import get_conversation_template
 from langport.protocol.openai_api_protocol import (
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -63,16 +63,19 @@ def get_gen_params(
         for message in messages:
             msg_role = message["role"]
             if msg_role == "system":
-                conv.system = message["content"]
+                try:
+                    conv.set_system_msg(message["content"])
+                except Exception:
+                    pass
             elif msg_role == "user":
-                conv.append_message(conv.settings.roles[0], message["content"])
+                conv.append_message(conv.roles[0], message["content"])
             elif msg_role == "assistant":
-                conv.append_message(conv.settings.roles[1], message["content"])
+                conv.append_message(conv.roles[1], message["content"])
             else:
                 raise ValueError(f"Unknown role: {msg_role}")
 
         # Add a blank message for the assistant.
-        conv.append_message(conv.settings.roles[1], None)
+        conv.append_message(conv.roles[1], None)
         prompt = conv.get_prompt()
 
     if max_tokens is None:
@@ -87,17 +90,17 @@ def get_gen_params(
         "echo": echo,
         "stream": stream,
         "logprobs": logprobs,
-        "stop_token_ids": conv.settings.stop_token_ids,
+        "stop_token_ids": conv.stop_token_ids,
     }
 
     if stop is None:
         gen_params.update(
-            {"stop": conv.settings.stop_str}
+            {"stop": conv.stop_str}
         )
     elif isinstance(stop, str):
-        gen_params.update({"stop": [stop, conv.settings.stop_str]})
+        gen_params.update({"stop": [stop, conv.stop_str]})
     else:
-        gen_params.update({"stop": stop + [conv.settings.stop_str]})
+        gen_params.update({"stop": stop + [conv.stop_str]})
 
     return gen_params
 
