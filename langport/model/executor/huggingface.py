@@ -195,7 +195,7 @@ class HuggingfaceExecutor(LocalModelExecutor):
                 "enable_cuda_graph": True,
                 "tensor_parallel": {
                     "enabled": True,
-                    "tp_size": 1,
+                    "tp_size": num_gpus,
                 },
             }
             ds_engine = deepspeed.init_inference(model=model, config=config)
